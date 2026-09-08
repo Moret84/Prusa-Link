@@ -41,6 +41,11 @@ def init_web_app(daemon):
     else:
         log.info("No authentication was set")
 
+    if not app.cfg.http.auth:
+        log.warning("Authentication is disabled by configuration, "
+                    "anyone able to reach this PrusaLink can control "
+                    "the printer")
+
     if service_local.api_key:
         app.api_key = service_local.api_key
         log.info("Api-Key was set.")

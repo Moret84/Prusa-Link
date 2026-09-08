@@ -4,6 +4,7 @@ from functools import wraps
 
 from poorwsgi import state
 from poorwsgi.digest import check_credentials, hexdigest
+from poorwsgi.digest import check_digest as poorwsgi_check_digest
 from poorwsgi.response import HTTPException, Response
 from poorwsgi.session import check_token
 
@@ -29,6 +30,18 @@ OLD_DIGEST = "Password is not correct"
 SAME_DIGEST = "Nothing to change. All credentials are same as old ones"
 
 
+def authentication_enabled():
+    """Tell whether the API and the web interface require credentials.
+
+    Authentication stays enabled while the configuration is not
+    loaded yet, so that no request can slip through unchecked during
+    startup.
+    """
+    if app.cfg is None:
+        return True
+    return app.cfg.http.auth
+
+
 def check_digest(req):
     """Check HTTP Digest.
 
@@ -52,6 +65,23 @@ def check_digest(req):
         raise HTTPException(state.HTTP_UNAUTHORIZED, realm=REALM)
 
 
+def digest_required(realm):
+    """Require HTTP Digest, unless authentication is disabled."""
+
+    def decorator(func):
+        with_digest = poorwsgi_check_digest(realm)(func)
+
+        @wraps(func)
+        def handler(req, *args, **kwargs):
+            if not authentication_enabled():
+                return func(req, *args, **kwargs)
+            return with_digest(req, *args, **kwargs)
+
+        return handler
+
+    return decorator
+
+
 def check_api_digest(func):
     """Check X-Api-Key header."""
 
@@ -60,6 +90,9 @@ def check_api_digest(func):
         prusa_link = app.daemon.prusa_link
         if not prusa_link or not prusa_link.printer:
             raise HTTPException(state.HTTP_SERVICE_UNAVAILABLE)
+
+        if not authentication_enabled():
+            return func(req, *args, **kwargs)
 
         if 'X-Api-Key' not in req.headers:
             check_digest(req)
