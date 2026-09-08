@@ -2,7 +2,6 @@
 from secrets import token_urlsafe
 
 from poorwsgi import state
-from poorwsgi.digest import check_digest
 from poorwsgi.response import JSONResponse
 
 from ..conditions import SN
@@ -10,6 +9,7 @@ from ..util import sanitize_api_key
 from .lib.auth import (
     REALM,
     check_api_digest,
+    digest_required,
     set_digest,
     valid_credentials,
     valid_digests,
@@ -103,7 +103,7 @@ def api_settings(req):
 
 
 @app.route('/api/settings', method=state.METHOD_POST)
-@check_digest(REALM)
+@digest_required(REALM)
 def api_settings_set(req):
     """Sets new printer and/or user settings and writes it to ini file"""
     # pylint: disable=too-many-locals

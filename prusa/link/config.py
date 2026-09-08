@@ -155,6 +155,7 @@ class Config(Get):
                 ("address", str, "0.0.0.0"),
                 ("port", int, 8080),
                 ("link_info", bool, False),
+                ("auth", bool, True),
             )))
 
         if args.address:
