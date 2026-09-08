@@ -9,6 +9,7 @@ import pathlib
 import re
 import select
 from glob import glob
+from threading import Lock
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
@@ -21,7 +22,7 @@ from prusa.connect.printer.const import (
 )
 
 from ..util import is_potato_cpu, prctl_name
-from . import v4l2
+from . import serialized_capture, v4l2
 from .encoders import BufferDetails, MJPEGEncoder, get_appropriate_encoder
 from .v4l2 import (
     V4L2_CID_FOCUS_ABSOLUTE,
@@ -521,6 +522,7 @@ class V4L2Driver(CameraDriver):
         self.device = None
         self.stream = None
         self.encoder = None
+        self.capture_lock = Lock()
 
     def _connect(self):
         """Connects to the V4L2 camera"""
@@ -608,6 +610,7 @@ class V4L2Driver(CameraDriver):
         """Sets the camera focus"""
         self.device.set_focus(focus)
 
+    @serialized_capture
     def take_a_photo(self):
         """Takes a photo, blocking while doing it"""
         prctl_name()
