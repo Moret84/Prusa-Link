@@ -201,6 +201,7 @@ class Config(Get):
                 "cameras",
                 (
                     ("auto_detect", bool, True),
+                    ("stream_fps", int, 10),
                 )))
 
     def set_section(self, name, model):

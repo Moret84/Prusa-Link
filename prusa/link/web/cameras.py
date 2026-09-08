@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from time import sleep, time
 
 from poorwsgi import state
-from poorwsgi.response import JSONResponse, Response
+from poorwsgi.response import GeneratorResponse, JSONResponse, Response
 from prusa.connect.printer.camera import Camera
 from prusa.connect.printer.const import (
     TRIGGER_SCHEME_TO_SECONDS,
@@ -14,8 +14,11 @@ from prusa.connect.printer.const import (
     NotSupported,
 )
 
+from ..cameras.streamer import broadcasters
 from ..const import (
     CAMERA_REGISTER_TIMEOUT,
+    CAMERA_STREAM_MAX_FPS,
+    CAMERA_STREAM_MAX_VIEWERS,
     HEADER_DATETIME_FORMAT,
     QUIT_INTERVAL,
     TIME_FOR_SNAPSHOT,
@@ -24,6 +27,7 @@ from .lib.auth import check_api_digest
 from .lib.core import app
 
 DEFAULT_PHOTO_EXPIRATION_TIMEOUT = 30  # 30s
+STREAM_BOUNDARY = "prusalinkframe"
 
 
 def format_header(header):
@@ -91,6 +95,48 @@ def default_camera_snap(req):
         return photo_by_camera_id(camera.camera_id, req)
     return JSONResponse(status_code=state.HTTP_NOT_FOUND,
                         message="Camera is not available")
+
+
+def stream_frame_interval():
+    """Return how long to wait between two frames of a live stream"""
+    fps = min(max(app.cfg.cameras.stream_fps, 1), CAMERA_STREAM_MAX_FPS)
+    return 1 / fps
+
+
+def mjpeg_parts(broadcaster):
+    """Wrap every captured frame into its multipart part"""
+    for frame in broadcaster.subscribe():
+        yield (f"--{STREAM_BOUNDARY}\r\n"
+               f"Content-Type: image/jpeg\r\n"
+               f"Content-Length: {len(frame)}\r\n\r\n").encode()
+        yield frame
+        yield b"\r\n"
+
+
+@app.route("/api/v1/cameras/<camera_id>/stream", method=state.METHOD_GET)
+@check_api_digest
+def camera_stream(_, camera_id):
+    """Stream a camera as MJPEG for as long as the client keeps reading"""
+    camera_configurator = app.daemon.prusa_link.camera_configurator
+
+    if not camera_configurator.is_connected(camera_id):
+        return JSONResponse(status_code=state.HTTP_NOT_FOUND,
+                            message=f"Camera with id: {camera_id} is"
+                                    f" not available")
+
+    driver = camera_configurator.loaded[camera_id]
+    broadcaster = broadcasters.for_driver(driver,
+                                          stream_frame_interval())
+    if broadcaster.subscribers >= CAMERA_STREAM_MAX_VIEWERS:
+        return JSONResponse(status_code=state.HTTP_SERVICE_UNAVAILABLE,
+                            message=f"Camera with id: {camera_id} is already"
+                                    f" streaming to"
+                                    f" {CAMERA_STREAM_MAX_VIEWERS} clients")
+
+    content_type = f"multipart/x-mixed-replace; boundary={STREAM_BOUNDARY}"
+    return GeneratorResponse(mjpeg_parts(broadcaster),
+                             content_type=content_type,
+                             headers={'Cache-Control': 'no-store'})
 
 
 @app.route("/api/v1/cameras", method=state.METHOD_GET)
