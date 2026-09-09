@@ -1,4 +1,4 @@
-prusa.connect.sdk.printer>=0.8.1
+git+https://github.com/Moret84/Prusa-Connect-SDK-Printer.git@563caecfd728001490b80a35e890f1586e16740a#egg=prusa.connect.sdk.printer
 py-gcode-metadata
 pip>=22.2.0
 bidict~=0.22.1
