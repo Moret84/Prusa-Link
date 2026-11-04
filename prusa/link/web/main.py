@@ -247,6 +247,10 @@ def api_status(req):
         status_printer["axis_y"] = tel.axis_y
     status["printer"] = status_printer
 
+    # --- Camera ---
+    stream_url = app.daemon.cfg.camera.stream_url
+    status["camera"] = {"stream_url": stream_url} if stream_url else None
+
     # --- Job ---
     if job.job_state is not JobState.IDLE:
         progress = float(tel.progress or 0)
