@@ -8,6 +8,7 @@ Unreleased
         - Support log files of unknown size
     * Remove camera support: Connect snapshots, the /api/v1/cameras endpoints, the camera entry of /api/v1/status and the [cameras] configuration section
     * Add a [camera] stream_url option, reported as camera.stream_url in /api/v1/status for the web interface
+    * Show the camera stream on the dashboard
 
 0.10.0 (2026-09-08)
     * Serve a camera live stream and show it in the web interface
