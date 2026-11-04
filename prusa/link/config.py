@@ -6,7 +6,8 @@ from os import getuid
 from os.path import abspath, join
 from pathlib import Path
 from pwd import getpwnam, getpwuid
-from typing import Iterable
+from typing import Iterable, Optional
+from urllib.parse import urlsplit
 
 from extendparser.get import Get
 
@@ -67,6 +68,25 @@ class Model(dict):
     @staticmethod
     def get(cfg, name, options):
         return Model(cfg.get_section(name, options))
+
+
+def parse_camera_stream_url(value: str) -> Optional[str]:
+    """Validate the [camera] stream_url option, empty meaning no stream.
+
+    The web interface shows the URL as an image source, so it must be
+    either an absolute http(s) URL or an absolute path, which the browser
+    resolves against the PrusaLink page.
+    """
+    if not value:
+        return None
+    url = urlsplit(value)
+    if url.scheme in ("http", "https") and url.netloc:
+        return value
+    if not url.scheme and not url.netloc and url.path.startswith("/"):
+        return value
+    raise ValueError(
+        f"[camera] stream_url must be an http(s) URL or an absolute path, "
+        f"got {value!r}")
 
 
 class FakeArgs:
@@ -195,14 +215,15 @@ class Config(Get):
                                               self.printer.directory))
         self.printer.directory_name = Path(self.printer.directory).name
 
-        # [cameras]
-        self.cameras = Model(
+        # [camera]
+        self.camera = Model(
             self.get_section(
-                "cameras",
+                "camera",
                 (
-                    ("auto_detect", bool, True),
-                    ("stream_fps", int, 10),
+                    ("stream_url", str, ""),
                 )))
+        self.camera.stream_url = parse_camera_stream_url(
+            self.camera.stream_url)
 
     def set_section(self, name, model):
         """Set section from model"""
@@ -226,7 +247,6 @@ class Config(Get):
         self.set_section('log', self.log_settings)
         self.set_section('http', self.http)
         self.set_section('printer', self.printer)
-        self.set_section('cameras', self.cameras)
 
     def set_global_log_level(self, args):
         """Set default global log level from command line."""

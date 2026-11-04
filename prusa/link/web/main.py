@@ -201,7 +201,6 @@ def api_status(req):
     tel = app.daemon.prusa_link.model.latest_telemetry
     transfer = app.daemon.prusa_link.printer.transfer
     printer = app.daemon.prusa_link.printer
-    camera_configurator = app.daemon.prusa_link.camera_configurator
     storage_dict = app.daemon.prusa_link.printer.fs.storage_dict
     status = {}
 
@@ -249,8 +248,8 @@ def api_status(req):
     status["printer"] = status_printer
 
     # --- Camera ---
-    status["camera"] = {"id": camera_configurator.order[0]} \
-        if camera_configurator.order else None
+    stream_url = app.daemon.cfg.camera.stream_url
+    status["camera"] = {"stream_url": stream_url} if stream_url else None
 
     # --- Job ---
     if job.job_state is not JobState.IDLE:
