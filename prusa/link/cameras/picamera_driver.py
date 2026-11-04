@@ -2,7 +2,6 @@
 import gc
 import logging
 import select
-from threading import Lock
 from time import time
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Optional
@@ -16,7 +15,7 @@ from prusa.connect.printer.const import (
 )
 
 from ..util import is_potato_cpu, prctl_name
-from . import serialized_capture, v4l2
+from . import v4l2
 from .encoders import BufferDetails, MJPEGEncoder, get_appropriate_encoder
 
 log = logging.getLogger(__name__)
@@ -129,7 +128,6 @@ class PiCameraDriver(CameraDriver):
         self.encoder = None
 
         self.controls_to_set: Dict[ControlId, Any] = {}
-        self.capture_lock = Lock()
 
     @staticmethod
     def get_resolutions(camera: Camera, stream_role: StreamRole,
@@ -335,7 +333,6 @@ class PiCameraDriver(CameraDriver):
         self.controls_to_set[controls.LensPosition] = \
             self._focus_transform(focus)
 
-    @serialized_capture
     def take_a_photo(self):
         """Asks for eight photos but is only interested in the last one"""
         prctl_name()
