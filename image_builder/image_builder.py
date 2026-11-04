@@ -10,6 +10,7 @@ import threading
 from functools import partial
 from importlib.resources import files
 from os.path import join
+from shutil import copyfile
 from time import sleep
 from urllib.request import urlretrieve
 
@@ -309,8 +310,8 @@ def build_image():
     except Exception:  # pylint: disable=broad-except
         print("pishrink is not installed, downloading")
         run_command(
-            "curl -SLO https://raw.githubusercontent.com/Drewsif/PiShrink/%s/pishrink.sh"
-            % PISHRINK_REV,
+            "curl -SLO https://raw.githubusercontent.com/"
+            "Drewsif/PiShrink/%s/pishrink.sh" % PISHRINK_REV,
         )
         run_command("chmod +x pishrink.sh")
 
@@ -508,6 +509,16 @@ def build_image():
     run_command(f"./pishrink.sh -n {IMAGE_NAME} {SHRUNK_IMAGE_NAME} ")
 
     shrunk_loop = mount_image(SHRUNK_IMAGE_NAME)
+
+    print("Setting rc-local shutdown timeout")
+    rc_local_override_dir = join(
+        ROOTFS_MOUNT, "etc/systemd/system/rc-local.service.d",
+    )
+    os.makedirs(rc_local_override_dir, exist_ok=True)
+    copyfile(
+        join(BUILDER_DATA_PATH, "rc-local-timeout.conf"),
+        join(rc_local_override_dir, "timeout.conf"),
+    )
 
     print("Adding the first boot script")
     rc_local_path = join(ROOTFS_MOUNT, "etc/rc.local")
