@@ -12,7 +12,7 @@ module.exports = (env, args) => {
         WITH_FONT: false,
         WITH_PRINT_BUTTON: true,
         WITH_V1_API: true,
-        WITH_CAMERAS: true,
+        WITH_CAMERAS: false,
         WITH_DOWNLOAD_BUTTON: true,
         WITH_TELEMETRY_NOZZLE_DIAMETER: true,
         WITH_API_KEY_AUTH: false,

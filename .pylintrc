@@ -8,7 +8,6 @@ generated-members=prctl
 
 [MASTER]
 extension-pkg-whitelist=pydantic
-ignore=v4l2.py
 
 [MESSAGES CONTROL]
 disable=

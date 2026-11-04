@@ -13,7 +13,6 @@ pyric~=0.1.6.3
 python-daemon~=3.0.1
 python-magic~=0.4.27
 python-prctl~=1.8.1
-PyTurboJPEG~=1.7.0
 pyudev~=0.24.0
 PyYAML~=6.0
 requests>=2.31.0

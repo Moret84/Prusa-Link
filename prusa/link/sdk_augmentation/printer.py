@@ -45,9 +45,6 @@ class MyPrinter(SDKPrinter, metaclass=MCSingleton):
         self.loop_thread = Thread(target=self.loop, name="loop")
         self.__inotify_running = False
         self.inotify_thread = Thread(target=self.inotify_loop, name="inotify")
-        self.snapshot_thread = Thread(target=self.snapshot_loop,
-                                      name="snapshot_sender",
-                                      daemon=True)
 
     def parse_command(self, res):
         """Parse telemetry response.
@@ -136,7 +133,6 @@ class MyPrinter(SDKPrinter, metaclass=MCSingleton):
         self.loop_thread.start()
         self.inotify_thread.start()
         self.download_thread.start()
-        self.snapshot_thread.start()
 
     def indicate_stop(self):
         """Passes the stop request to all SDK related threads.
@@ -150,7 +146,6 @@ class MyPrinter(SDKPrinter, metaclass=MCSingleton):
         self.stop_loop()
         self.queue.put(None)  # Trick the SDK into quitting fast
         self.command_handler.stop()
-        self.camera_controller.stop()
 
     def wait_stopped(self):
         """Waits for the SDK threads to join
@@ -162,7 +157,6 @@ class MyPrinter(SDKPrinter, metaclass=MCSingleton):
         self.inotify_thread.join()
         self.loop_thread.join()
         self.download_thread.join()
-        self.snapshot_thread.join()
 
     def loop(self):
         """SDKPrinter.loop with thread name."""
@@ -183,11 +177,6 @@ class MyPrinter(SDKPrinter, metaclass=MCSingleton):
         """Handler for download loop"""
         prctl_name()
         self.download_mgr.loop()
-
-    def snapshot_loop(self):
-        """Gives snapshot loop a consistent name with the rest of the app"""
-        prctl_name()
-        self.camera_controller.snapshot_loop()
 
     @property
     def type_string(self):

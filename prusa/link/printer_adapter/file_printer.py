@@ -58,7 +58,6 @@ class FilePrinter(metaclass=MCSingleton):
         self.time_printing_signal = Signal()
         self.byte_position_signal = Signal()  # kwargs: current: int
         #                                               total: int
-        self.layer_trigger_signal = Signal()
         self.recovery_done_signal = Signal()
 
         self.lock = RLock()
@@ -193,10 +192,6 @@ class FilePrinter(metaclass=MCSingleton):
                     self._print_pause()
                     if not self.data.printing:
                         break
-
-                # Trigger cameras on layer change
-                if ";LAYER_CHANGE" in line:
-                    self.layer_trigger_signal.send()
 
                 if gcode:
                     self.print_gcode(gcode)

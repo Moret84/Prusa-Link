@@ -6,6 +6,7 @@ Unreleased
     * Static Web update
         - Warn when running the outdated Raspbian bullseye
         - Support log files of unknown size
+    * Remove camera support: Connect snapshots, the /api/v1/cameras endpoints, the camera entry of /api/v1/status and the [cameras] configuration section
 
 0.10.0 (2026-09-08)
     * Serve a camera live stream and show it in the web interface

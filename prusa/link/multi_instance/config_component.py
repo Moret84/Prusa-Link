@@ -307,7 +307,6 @@ class ConfigComponent:
             str: The path of the created configuration file.
         """
         port = self.multi_instance_config.web.port_range_start + printer_number
-        auto_detect_cameras = printer_number == 1
 
         config = Config(FakeArgs(path=config_path))
         config.daemon.data_dir = data_folder
@@ -323,8 +322,6 @@ class ConfigComponent:
         directory = Path(data_folder, "PrusaLink gcodes").as_posix()
         config.printer.directory = directory
         config.http.port = port
-        # Only the first printer gets cameras, whichever that ends up being
-        config.cameras.auto_detect = auto_detect_cameras
         config.update_sections()
         with open(config_path, "w", encoding="UTF-8") as file:
             config.write(file)

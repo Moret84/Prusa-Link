@@ -195,14 +195,6 @@ class Config(Get):
                                               self.printer.directory))
         self.printer.directory_name = Path(self.printer.directory).name
 
-        # [cameras]
-        self.cameras = Model(
-            self.get_section(
-                "cameras",
-                (
-                    ("auto_detect", bool, True),
-                )))
-
     def set_section(self, name, model):
         """Set section from model"""
         if name not in self:
@@ -225,7 +217,6 @@ class Config(Get):
         self.set_section('log', self.log_settings)
         self.set_section('http', self.http)
         self.set_section('printer', self.printer)
-        self.set_section('cameras', self.cameras)
 
     def set_global_log_level(self, args):
         """Set default global log level from command line."""

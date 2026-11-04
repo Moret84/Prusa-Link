@@ -6,12 +6,10 @@ from enum import Enum
 from threading import Event
 from threading import enumerate as enumerate_threads
 from time import sleep
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 from prusa.connect.printer import Command as SDKCommand
 from prusa.connect.printer import DownloadMgr
-from prusa.connect.printer.camera_configurator import CameraConfigurator
-from prusa.connect.printer.camera_driver import CameraDriver
 from prusa.connect.printer.conditions import API, CondState
 from prusa.connect.printer.const import MMU_SLOT_COUNTS, MMUType, Source, State
 from prusa.connect.printer.const import Command as CommandType
@@ -20,9 +18,6 @@ from prusa.connect.printer.files import File
 from prusa.connect.printer.models import Sheet as SDKSheet
 
 from .. import __version__
-from ..camera_governor import CameraGovernor
-from ..cameras.picamera_driver import PiCameraDriver
-from ..cameras.v4l2_driver import V4L2Driver
 from ..conditions import HW, ROOT_COND, UPGRADED, use_connect_errors
 from ..config import Config, Settings
 from ..const import (
@@ -170,20 +165,6 @@ class PrusaLink:
         self.printer = MyPrinter()
         self.printer.software = __version__
 
-        drivers: List[Type[CameraDriver]] = [V4L2Driver]
-        if PiCameraDriver.supported:
-            drivers.append(PiCameraDriver)
-
-        self.camera_configurator = CameraConfigurator(
-            config=self.settings,
-            config_file_path=self.cfg.printer.settings,
-            camera_controller=self.printer.camera_controller,
-            drivers=drivers,
-            auto_detect=self.cfg.cameras.auto_detect,
-        )
-        self.camera_governor = CameraGovernor(self.camera_configurator,
-                                              self.printer.camera_controller)
-
         self.printer.register_handler = self.printer_registered
         self.printer.connection_from_settings(settings)
 
@@ -321,7 +302,6 @@ class PrusaLink:
             self.file_printer_finished_printing)
         self.file_printer.byte_position_signal.connect(
             self.byte_position_changed)
-        self.file_printer.layer_trigger_signal.connect(self.layer_trigger)
         self.file_printer.recovery_done_signal.connect(
             lambda _: self.lcd_printer.notify(), weak=False)
         self.storage_controller.folder_attached_signal.\
@@ -359,8 +339,6 @@ class PrusaLink:
         # get the ip, then poll the rest of the network info
         self.ip_updater.update()
         self.ip_updater.updated_signal.connect(self.ip_updated)
-
-        self.camera_governor.start()
 
         # Leave the non-polled telemetry split from the rest
         self.auto_telemetry = AutoTelemetry(self.serial_parser,
@@ -443,7 +421,6 @@ class PrusaLink:
                            == PrintState.SD_PRINTING)
 
         self.quit_evt.set()
-        self.camera_governor.stop()
         self.file_printer.stop()
         self.command_queue.stop()
         self.telemetry_passer.stop()
@@ -486,7 +463,6 @@ class PrusaLink:
             self.keepalive.wait_stopped()
             self.lcd_printer.wait_stopped()
             self.ip_updater.wait_stopped()
-            self.camera_governor.wait_stopped()
             self.auto_telemetry.wait_stopped()
             self.serial_queue.wait_stopped()
             self.serial_parser.wait_stopped()
@@ -655,10 +631,6 @@ class PrusaLink:
         self.command_queue.enqueue_command(command)
 
     # --- Signal handlers ---
-    def layer_trigger(self, _):
-        """Passes the call to trigger to the camera controller"""
-        self.printer.camera_controller.layer_trigger()
-
     def mbl_data_changed(self, data) -> None:
         """Sends the mesh bed leveling data to Connect"""
         self.printer.mbl = data["data"]

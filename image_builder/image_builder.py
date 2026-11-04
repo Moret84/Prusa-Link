@@ -455,8 +455,8 @@ def build_image():
     run_over_ssh("sudo apt-get install -y uuid")
     run_over_ssh(
         "sudo apt-get install -y git python3-pip pigpio libcap-dev "
-        "libmagic1 libturbojpeg0 libffi-dev python3-numpy "
-        "cmake iptables python3-libcamera",
+        "libmagic1 libffi-dev python3-numpy "
+        "cmake iptables",
     )
 
     print("Installing PrusaLink")
