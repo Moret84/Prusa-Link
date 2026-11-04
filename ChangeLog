@@ -3,6 +3,9 @@
 Unreleased
     * Fix reboot timeouts on the multi-instance image
     * Update PoorWSGI to 2.7 and pydantic to 1.10.13
+    * Static Web update
+        - Warn when running the outdated Raspbian bullseye
+        - Support log files of unknown size
 
 0.10.0 (2026-09-08)
     * Serve a camera live stream and show it in the web interface
